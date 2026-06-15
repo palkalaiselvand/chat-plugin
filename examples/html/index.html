@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Chat SDK — Plain HTML Example</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #1e293b;
+      color: #fff;
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 2rem;
+      padding: 2rem;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .demo-section {
+      background: #fff;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      border: 1px solid #e2e8f0;
+    }
+
+    .demo-section h2 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: #475569;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* Inline panel: give it an explicit height */
+    agent-chat-panel {
+      display: block;
+      height: 500px;
+      border-radius: 0.75rem;
+      overflow: hidden;
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      color: #94a3b8;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+  <header>Agent Chat SDK — HTML Integration Demo</header>
+
+  <main>
+    <!-- Inline panel mode -->
+    <div class="demo-section">
+      <h2>Inline Panel Mode</h2>
+      <agent-chat-panel id="panel" mode="panel"></agent-chat-panel>
+    </div>
+
+    <!-- Info sidebar -->
+    <div class="demo-section">
+      <h2>About this demo</h2>
+      <p style="color:#475569;line-height:1.6;font-size:0.9rem;">
+        This page demonstrates all three UI modes of the <strong>Agent Chat SDK</strong>:
+      </p>
+      <ul style="color:#475569;line-height:2;font-size:0.85rem;padding-left:1.25rem;margin-top:0.75rem;">
+        <li><strong>Inline panel</strong> — embedded on the left</li>
+        <li><strong>Floating widget</strong> — bottom-right corner (blue bubble)</li>
+        <li><strong>Full-page</strong> — click the button below</li>
+      </ul>
+      <button id="open-fullpage"
+        style="margin-top:1.5rem;padding:0.6rem 1.2rem;background:#2563eb;color:#fff;
+               border:none;border-radius:0.5rem;cursor:pointer;font-size:0.9rem;">
+        Open Full-Page Chat
+      </button>
+      <p style="color:#94a3b8;font-size:0.8rem;margin-top:1rem;">
+        The SDK sends POST requests to the configured endpoint.<br/>
+        Point <code>endpoint</code> at your AI backend to test live streaming.
+      </p>
+    </div>
+  </main>
+
+  <!-- Full-page panel (hidden by default) -->
+  <agent-chat-panel id="fullpage" mode="fullpage" style="display:none;"></agent-chat-panel>
+
+  <!-- Floating widget (always visible) -->
+  <agent-chat-widget id="widget"></agent-chat-widget>
+
+  <footer>Built with @agent-ui/chat-sdk &mdash; Web Components + TypeScript</footer>
+
+  <!--
+    In production, load from your CDN or bundler:
+    <script src="https://unpkg.com/@agent-ui/chat-sdk/dist/index.umd.js"></script>
+  -->
+  <script type="module">
+    import { defineAgentChat } from '../../dist/index.es.js';
+
+    const sharedConfig = {
+      endpoint: 'https://your-backend.example.com/api/chat/stream',
+      headers: {
+        // Authorization: 'Bearer YOUR_TOKEN',
+      },
+      theme: {
+        colorPrimary: '#2563eb',
+        borderRadius: '0.85rem',
+        fontFamily: 'system-ui, sans-serif',
+      },
+      labels: {
+        title: 'AI Assistant',
+        placeholder: 'Ask me anything…',
+        emptyState: 'Hi! How can I help you today?',
+        errorMessage: 'Connection error. Please try again.',
+      },
+      initialMessages: [
+        { role: 'assistant', content: 'Hello! I\'m your AI assistant. How can I help you today?' },
+      ],
+      actions: [
+        { id: 'help', label: '💡 How do I get started?', message: 'How do I get started?' },
+        { id: 'features', label: '✨ What can you do?', message: 'What can you do?' },
+      ],
+    };
+
+    // Configure panel
+    document.getElementById('panel').config = { ...sharedConfig, mode: 'panel' };
+
+    // Configure widget
+    document.getElementById('widget').config = { ...sharedConfig, mode: 'widget' };
+
+    // Full-page chat
+    const fullpage = document.getElementById('fullpage');
+    fullpage.config = { ...sharedConfig, mode: 'fullpage' };
+
+    document.getElementById('open-fullpage').addEventListener('click', () => {
+      fullpage.style.display = 'flex';
+    });
+
+    fullpage.addEventListener('agent-chat:close', () => {
+      fullpage.style.display = 'none';
+    });
+
+    // Listen for SDK events
+    document.addEventListener('agent-chat:message-sent', (e) => {
+      console.log('[SDK] Message sent:', e.detail.message);
+    });
+    document.addEventListener('agent-chat:message-received', (e) => {
+      console.log('[SDK] Message received:', e.detail.message);
+    });
+    document.addEventListener('agent-chat:error', (e) => {
+      console.error('[SDK] Error:', e.detail.error);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Chat SDK — Blazor / ASP.NET Integration</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #f8fafc; }
+    header { background: #1e293b; color: #fff; padding: 1rem 2rem; }
+    header h1 { font-size: 1.1rem; font-weight: 600; }
+    main { padding: 2rem; max-width: 900px; margin: 0 auto; }
+    .panel-wrap {
+      height: 520px;
+      border-radius: 1rem;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      margin-top: 1.5rem;
+    }
+    agent-chat-panel { display: block; height: 100%; }
+  </style>
+</head>
+<body>
+  <header><h1>Agent Chat SDK — Blazor / ASP.NET Integration</h1></header>
+
+  <main>
+    <p style="color:#64748b;margin-bottom:1rem;">
+      Blazor Server / WASM integration via JS Interop.
+      In a Blazor component, use <code>IJSRuntime.InvokeVoidAsync</code> to call
+      <code>agentChatInit(config)</code> after the component mounts.
+    </p>
+
+    <!-- The element — configured by JS below -->
+    <div class="panel-wrap">
+      <agent-chat-panel id="blazor-panel" mode="panel"></agent-chat-panel>
+    </div>
+    <agent-chat-widget id="blazor-widget"></agent-chat-widget>
+  </main>
+
+  <!--
+    Load the SDK UMD bundle.
+    In a real Blazor project, copy dist/ to wwwroot/ and reference it here.
+  -->
+  <script src="../../dist/index.umd.js"></script>
+
+  <script>
+    /**
+     * agentChatInit — called from Blazor via JS Interop:
+     *
+     *   await JS.InvokeVoidAsync("agentChatInit", new {
+     *       endpoint = "/api/chat/stream",
+     *       headers  = new { Authorization = "Bearer " + token },
+     *       theme    = new { colorPrimary = "#7c3aed" }
+     *   });
+     */
+    window.agentChatInit = function (config) {
+      const panel  = document.getElementById('blazor-panel');
+      const widget = document.getElementById('blazor-widget');
+      if (panel)  panel.config  = { ...config, mode: 'panel' };
+      if (widget) widget.config = { ...config, mode: 'widget' };
+    };
+
+    // Demo: call immediately with a mock config
+    agentChatInit({
+      endpoint: 'https://your-backend.example.com/api/chat/stream',
+      theme: { colorPrimary: '#7c3aed', borderRadius: '0.85rem' },
+      labels: {
+        title: 'AI Assistant (Blazor)',
+        placeholder: 'Ask me anything…',
+        emptyState: 'Hi from Blazor! How can I help?',
+      },
+      initialMessages: [
+        { role: 'assistant', content: 'Hello from Blazor! How can I help?' },
+      ],
+    });
+
+    // Expose event callbacks that Blazor can invoke via DotNetObjectReference
+    window.agentChatSubscribe = function (dotnetRef) {
+      document.addEventListener('agent-chat:message-received', function (e) {
+        dotnetRef.invokeMethodAsync('OnMessageReceived', e.detail.message.content);
+      });
+    };
+  </script>
+</body>
+</html>

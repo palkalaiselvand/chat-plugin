@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agent Chat SDK — Dev Playground</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.9rem 2rem;
+      background: #1e293b;
+      border-bottom: 1px solid #334155;
+    }
+
+    header .logo {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.02em;
+    }
+
+    header .badge {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      background: #0ea5e9;
+      color: #fff;
+      border-radius: 9999px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    header .mode-tabs {
+      margin-left: auto;
+      display: flex;
+      gap: 0.25rem;
+      background: #0f172a;
+      padding: 0.25rem;
+      border-radius: 0.5rem;
+    }
+
+    header .mode-tabs button {
+      padding: 0.35rem 0.9rem;
+      border: none;
+      border-radius: 0.35rem;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    header .mode-tabs button.active {
+      background: #1e40af;
+      color: #fff;
+    }
+
+    .content {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+      position: relative;
+    }
+
+    /* Panel wrapper */
+    .panel-shell {
+      width: 440px;
+      height: 600px;
+      border-radius: 1.25rem;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+    }
+
+    agent-chat-panel {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Full-page overlay */
+    #fullpage-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 10000;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+    }
+
+    #fullpage-overlay.visible {
+      display: flex;
+    }
+
+    #fullpage-shell {
+      width: min(800px, 95vw);
+      height: min(700px, 90vh);
+      border-radius: 1.25rem;
+      overflow: hidden;
+      box-shadow: 0 25px 80px rgba(0,0,0,0.6);
+    }
+
+    #fullpage-shell agent-chat-panel {
+      border-radius: 0;
+    }
+
+    footer {
+      text-align: center;
+      padding: 0.75rem;
+      color: #475569;
+      font-size: 0.78rem;
+      border-top: 1px solid #1e293b;
+    }
+
+    footer a { color: #38bdf8; text-decoration: none; }
+
+    /* Theme switcher pill */
+    .theme-bar {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.5rem;
+      background: #1e293b;
+      padding: 0.4rem 0.75rem;
+      border-radius: 9999px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      z-index: 100;
+    }
+
+    .theme-bar span {
+      font-size: 0.72rem;
+      color: #64748b;
+      display: flex;
+      align-items: center;
+      margin-right: 0.25rem;
+    }
+
+    .theme-dot {
+      width: 1.4rem;
+      height: 1.4rem;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .theme-dot:hover { transform: scale(1.2); }
+    .theme-dot.active { border-color: #fff; }
+
+    /* Mini log panel */
+    .event-log {
+      position: fixed;
+      top: 4rem;
+      right: 1rem;
+      width: 280px;
+      max-height: 240px;
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 0.6rem;
+      overflow: hidden;
+      font-size: 0.72rem;
+      font-family: 'Cascadia Code', monospace;
+      z-index: 200;
+    }
+
+    .event-log .log-title {
+      padding: 0.4rem 0.75rem;
+      background: #0f172a;
+      color: #64748b;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .event-log .log-entries {
+      overflow-y: auto;
+      max-height: 200px;
+      padding: 0.25rem 0;
+    }
+
+    .log-entry {
+      padding: 0.2rem 0.75rem;
+      border-bottom: 1px solid #1e293b;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    .log-entry .tag {
+      display: inline-block;
+      padding: 0 0.35rem;
+      border-radius: 0.2rem;
+      font-size: 0.64rem;
+      font-weight: 700;
+      margin-right: 0.25rem;
+      text-transform: uppercase;
+    }
+
+    .tag.sent    { background: #1d4ed8; color: #bfdbfe; }
+    .tag.recv    { background: #166534; color: #bbf7d0; }
+    .tag.err     { background: #991b1b; color: #fecaca; }
+    .tag.open    { background: #7c2d12; color: #fed7aa; }
+    .tag.cleared { background: #4c1d95; color: #ede9fe; }
+  </style>
+</head>
+<body>
+  <header>
+    <span class="logo">agent-ui / chat-sdk</span>
+    <span class="badge">dev</span>
+    <div class="mode-tabs">
+      <button class="active" data-mode="panel">Panel</button>
+      <button data-mode="widget">Widget</button>
+      <button data-mode="fullpage">Full-page</button>
+    </div>
+  </header>
+
+  <!-- Panel mode -->
+  <div class="content" id="view-panel">
+    <div class="panel-shell">
+      <agent-chat-panel id="main-panel" mode="panel"></agent-chat-panel>
+    </div>
+  </div>
+
+  <!-- Widget mode (empty canvas — FAB in corner) -->
+  <div class="content" id="view-widget" style="display:none;">
+    <p style="color:#475569;text-align:center;font-size:0.9rem;">
+      Widget is floating in the bottom-right corner.<br/>
+      Click the blue bubble to open the chat.
+    </p>
+  </div>
+
+  <!-- Floating widget (always mounted, visibility controlled) -->
+  <agent-chat-widget id="main-widget" style="display:none;"></agent-chat-widget>
+
+  <!-- Full-page overlay -->
+  <div id="fullpage-overlay">
+    <div id="fullpage-shell">
+      <agent-chat-panel id="fullpage-panel" mode="panel"></agent-chat-panel>
+    </div>
+  </div>
+
+  <!-- Event log -->
+  <div class="event-log">
+    <div class="log-title">Event log</div>
+    <div class="log-entries" id="log"></div>
+  </div>
+
+  <!-- Theme switcher -->
+  <div class="theme-bar">
+    <span>Theme</span>
+    <div class="theme-dot active" data-theme="blue"    style="background:#2563eb;" title="Indigo"></div>
+    <div class="theme-dot"        data-theme="violet"  style="background:#7c3aed;" title="Violet"></div>
+    <div class="theme-dot"        data-theme="emerald" style="background:#059669;" title="Emerald"></div>
+    <div class="theme-dot"        data-theme="rose"    style="background:#e11d48;" title="Rose"></div>
+    <div class="theme-dot"        data-theme="slate"   style="background:#475569;" title="Slate"></div>
+  </div>
+
+  <footer>
+    Mock SSE backend at <a href="/api/chat/stream">/api/chat/stream</a> &mdash;
+    responses are simulated locally &mdash;
+    <a href="/examples/html/index.html">HTML example</a>
+  </footer>
+
+  <script type="module">
+    import { defineAgentChat } from '/src/index.ts';
+
+    // ── Theme presets ─────────────────────────────────────────────────────────
+    const THEMES = {
+      blue: {
+        colorPrimary: '#2563eb',
+        colorBackground: '#f8fafc',
+        colorSurface: '#ffffff',
+        colorText: '#1e293b',
+        colorTextMuted: '#64748b',
+        colorUserBubble: '#2563eb',
+        colorUserBubbleText: '#ffffff',
+        colorAssistantBubble: '#f1f5f9',
+        colorAssistantBubbleText: '#1e293b',
+        colorBorder: '#e2e8f0',
+        borderRadius: '0.85rem',
+        fontFamily: 'system-ui, sans-serif',
+        fontSize: '0.9rem',
+      },
+      violet: {
+        colorPrimary: '#7c3aed',
+        colorBackground: '#faf5ff',
+        colorSurface: '#ffffff',
+        colorText: '#1e1b4b',
+        colorTextMuted: '#7c3aed',
+        colorUserBubble: '#7c3aed',
+        colorUserBubbleText: '#ffffff',
+        colorAssistantBubble: '#ede9fe',
+        colorAssistantBubbleText: '#1e1b4b',
+        colorBorder: '#ddd6fe',
+        borderRadius: '1rem',
+        fontFamily: 'system-ui, sans-serif',
+      },
+      emerald: {
+        colorPrimary: '#059669',
+        colorBackground: '#f0fdf4',
+        colorSurface: '#ffffff',
+        colorText: '#064e3b',
+        colorTextMuted: '#6b7280',
+        colorUserBubble: '#059669',
+        colorUserBubbleText: '#ffffff',
+        colorAssistantBubble: '#d1fae5',
+        colorAssistantBubbleText: '#064e3b',
+        colorBorder: '#a7f3d0',
+        borderRadius: '0.75rem',
+        fontFamily: 'system-ui, sans-serif',
+      },
+      rose: {
+        colorPrimary: '#e11d48',
+        colorBackground: '#fff1f2',
+        colorSurface: '#ffffff',
+        colorText: '#1e293b',
+        colorTextMuted: '#9f1239',
+        colorUserBubble: '#e11d48',
+        colorUserBubbleText: '#ffffff',
+        colorAssistantBubble: '#ffe4e6',
+        colorAssistantBubbleText: '#1e293b',
+        colorBorder: '#fecdd3',
+        borderRadius: '1.25rem',
+        fontFamily: 'system-ui, sans-serif',
+      },
+      slate: {
+        colorPrimary: '#475569',
+        colorBackground: '#f8fafc',
+        colorSurface: '#f1f5f9',
+        colorText: '#0f172a',
+        colorTextMuted: '#64748b',
+        colorUserBubble: '#334155',
+        colorUserBubbleText: '#f8fafc',
+        colorAssistantBubble: '#e2e8f0',
+        colorAssistantBubbleText: '#0f172a',
+        colorBorder: '#cbd5e1',
+        borderRadius: '0.6rem',
+        fontFamily: 'system-ui, sans-serif',
+      },
+    };
+
+    let currentTheme = 'blue';
+    let currentMode  = 'panel';
+
+    // ── Base config ───────────────────────────────────────────────────────────
+    function buildConfig(mode, theme = currentTheme) {
+      return {
+        endpoint: '/api/chat/stream',
+        mode,
+        theme: THEMES[theme],
+        labels: {
+          title: 'AI Assistant',
+          placeholder: 'Ask me anything…',
+          emptyState: 'Hi! I\'m your AI assistant. How can I help you today?',
+          errorMessage: 'Something went wrong. Please try again.',
+        },
+        initialMessages: [
+          { role: 'assistant', content: 'Hello! 👋 I\'m a **mock AI assistant** running locally.\n\nTry asking me:\n- A question\n- To write some code\n- Anything you like!' },
+        ],
+        actions: [
+          { id: 'hello',   label: '👋 Say hello',         message: 'Hello!' },
+          { id: 'code',    label: '💻 Write some code',    message: 'Write a TypeScript function that debounces a callback.' },
+          { id: 'explain', label: '📖 Explain Web Components', message: 'Explain Web Components in simple terms.' },
+          { id: 'poem',    label: '🎭 Write a haiku',      message: 'Write a haiku about software engineering.' },
+        ],
+      };
+    }
+
+    // ── Initial setup ─────────────────────────────────────────────────────────
+    const panel     = document.getElementById('main-panel');
+    const widget    = document.getElementById('main-widget');
+    const fpPanel   = document.getElementById('fullpage-panel');
+    const fpOverlay = document.getElementById('fullpage-overlay');
+
+    panel.config  = buildConfig('panel');
+    widget.config = buildConfig('widget');
+    fpPanel.config = buildConfig('panel');
+
+    // ── Mode tabs ─────────────────────────────────────────────────────────────
+    document.querySelectorAll('.mode-tabs button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+        currentMode = mode;
+
+        document.querySelectorAll('.mode-tabs button').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        document.getElementById('view-panel').style.display  = mode === 'panel'  ? 'flex'   : 'none';
+        document.getElementById('view-widget').style.display = mode === 'widget' ? 'flex'   : 'none';
+        widget.style.display = mode === 'widget' ? 'block' : 'none';
+
+        if (mode === 'fullpage') {
+          fpOverlay.classList.add('visible');
+          // Close on overlay backdrop click
+          fpOverlay.onclick = (e) => {
+            if (e.target === fpOverlay) fpOverlay.classList.remove('visible');
+          };
+          document.getElementById('view-panel').style.display = 'flex';
+        } else {
+          fpOverlay.classList.remove('visible');
+        }
+      });
+    });
+
+    // ── Theme switcher ────────────────────────────────────────────────────────
+    document.querySelectorAll('.theme-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        currentTheme = dot.dataset.theme;
+        document.querySelectorAll('.theme-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+
+        // Update all panels/widgets with new theme
+        panel.config  = buildConfig('panel', currentTheme);
+        widget.config = buildConfig('widget', currentTheme);
+        fpPanel.config = buildConfig('panel', currentTheme);
+      });
+    });
+
+    // ── Event log ─────────────────────────────────────────────────────────────
+    const logEl = document.getElementById('log');
+    const MAX_LOG = 20;
+
+    function logEvent(tag, tagClass, text) {
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="tag ${tagClass}">${tag}</span>${text}`;
+      logEl.prepend(entry);
+      // Trim old entries
+      while (logEl.children.length > MAX_LOG) logEl.lastElementChild.remove();
+    }
+
+    document.addEventListener('agent-chat:message-sent', e => {
+      const msg = e.detail.message;
+      logEvent('sent', 'sent', (msg.content || '').slice(0, 50));
+    });
+    document.addEventListener('agent-chat:message-received', e => {
+      const msg = e.detail.message;
+      logEvent('recv', 'recv', (msg.content || '').slice(0, 50) + '…');
+    });
+    document.addEventListener('agent-chat:error', e => {
+      logEvent('err', 'err', e.detail.error);
+    });
+    document.addEventListener('agent-chat:open', () => logEvent('open', 'open', 'widget opened'));
+    document.addEventListener('agent-chat:cleared', () => logEvent('clear', 'cleared', 'conversation cleared'));
+  </script>
+</body>
+</html>

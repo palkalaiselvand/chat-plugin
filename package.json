@@ -1,0 +1,57 @@
+{
+  "name": "@agent-ui/chat-sdk",
+  "version": "0.1.0",
+  "description": "Framework-independent AI agent chat UI SDK built with Web Components and TypeScript",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.umd.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\""
+  },
+  "keywords": [
+    "ai",
+    "chat",
+    "web-components",
+    "custom-elements",
+    "streaming",
+    "sse",
+    "agent",
+    "ui-sdk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dompurify": "^3.1.6",
+    "marked": "^12.0.0"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.5",
+    "@vitest/coverage-v8": "^1.6.0",
+    "eslint": "^8.57.0",
+    "happy-dom": "^14.12.3",
+    "jsdom": "^29.1.1",
+    "prettier": "^3.3.2",
+    "typescript": "^5.5.3",
+    "vite": "^5.3.3",
+    "vite-plugin-dts": "^3.9.1",
+    "vitest": "^1.6.0"
+  }
+}

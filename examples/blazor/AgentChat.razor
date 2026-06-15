@@ -1,0 +1,71 @@
+@* Blazor component example *@
+@* Add to your .razor page or component *@
+
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="chat-wrapper">
+    <div class="panel-container">
+        <agent-chat-panel id="chat-panel" mode="panel"></agent-chat-panel>
+    </div>
+    <agent-chat-widget id="chat-widget"></agent-chat-widget>
+</div>
+
+@code {
+    [Parameter] public string Endpoint { get; set; } = "/api/chat/stream";
+    [Parameter] public string Title { get; set; } = "AI Assistant";
+
+    private DotNetObjectReference<AgentChatBlazor>? _objRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _objRef = DotNetObjectReference.Create(this);
+
+        // Initialise the SDK elements via JS interop
+        await JS.InvokeVoidAsync("agentChatInit", new
+        {
+            endpoint = Endpoint,
+            labels = new { title = Title, emptyState = "Hi! How can I help?" },
+            theme = new { colorPrimary = "#7c3aed", borderRadius = "0.85rem" },
+            initialMessages = new[]
+            {
+                new { role = "assistant", content = "Hello! How can I help you today?" }
+            }
+        });
+
+        // Subscribe to SDK events from .NET
+        await JS.InvokeVoidAsync("agentChatSubscribe", _objRef);
+    }
+
+    [JSInvokable]
+    public Task OnMessageReceived(string content)
+    {
+        Console.WriteLine($"[Blazor] AI replied: {content}");
+        // Trigger state updates, logging, analytics etc.
+        return Task.CompletedTask;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _objRef?.Dispose();
+        await Task.CompletedTask;
+    }
+}
+
+<style>
+    .chat-wrapper {
+        font-family: system-ui, sans-serif;
+    }
+    .panel-container {
+        height: 520px;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        overflow: hidden;
+    }
+    agent-chat-panel {
+        display: block;
+        height: 100%;
+    }
+</style>
